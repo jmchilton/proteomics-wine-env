@@ -1,0 +1,81 @@
+This project is used to package up an existing WINE environment
+configured with proteomics libraries and tools into a single script
+that can be copied to new instances.
+
+You are responsible for setting up such an environment intially, but
+afterward you should be able to use the resulting script to install on
+additional machines or in a way that allows multiple users to use the
+environment on the same machine.
+
+The particular use case this was created for was building Ubuntu cloud
+images for proteomics using CloudBioLinux (for both desktop and server
+applications), but nothing about these scripts is particular to
+Ubuntu or really proteomics applications.
+
+Usage:
+
+Once you have configured your local wine instance (in $HOME/.wine),
+you simply need to run the bundle_current_env.sh script and that will
+create the file setup_proteomics_wine_env.sh, which you can place in
+/usr/bin/ (or wherever is convenient) on another Linux instance to
+allow others to utilize this environmet.
+
+I have been able to get ProteoWizard with vendor libraries, IDPicker
+(http://fenchurch.mc.vanderbilt.edu/software.php), COMPASS
+(https://www.chem.wisc.edu/~coon/software.php), multiplierz
+(http://blais.dfci.harvard.edu/index.php?id=63), and mzServer
+(http://blaispathways.dfci.harvard.edu/mzServer) running under Linux
+using this method.
+
+Setting Up Wine for Proteomics Applications:
+
+Proteowizard is probably something you are going to want to setup in
+your wine environment. If for no other reason than it in turn sets up
+various vendor libraries.
+
+In order to install Proteowizard 2.0.XXXX, one needs to first setup
+Microsoft .NET 3.5 and the Visual C 2008 runtime. I believe this can
+be done with older versions of Wine (say 1.3 series). The newest
+versions of Proteowizard (version 3.XXX.XXX) additionally require
+Microsoft .NET 4.0. This use to be problematic, but with the newest
+versions for winetricks and wine 1.4 under Ubuntu 12.04 I have been
+able to get this to work. Microsoft .NET 4.0 is required for other
+tools such as IDPicker also.
+
+http://tools.proteomecenter.org/wiki/index.php?title=Msconvert_Wine
+
+-----
+
+Download dotnetfx.exe from http://download.cnet.com/Microsoft-NET-Framework-Redistributable-Package-x86/3000-10250_4-10726028.html to $HOME/Downloads.
+
+Download netframework3.exe from http://www.oldversion.com/download-.Net-Framework-3.0.html to $HOME/Downloads.
+
+Download gacutil-net40.tar.bz2 from http://www.mediafire.com/?v8rw5h1ra7maod4 to $HOME/Downloads.
+
+Download the latest 3.X proteowizard to $HOME/Downloads (make sure to download the Windows installer with vendor reader support).
+
+#!/bin/bash
+
+mkdir -p $HOME/.cache/winetricks/dotnet20
+mkdir -p $HOME/.cache/winetricks/dotnet30
+mkdir -p $HOME/.cache/winetricks/dotnet40
+export DOWNLOADS=${DOWNLOADS:-$HOME/Downloads}
+export WINEPREFIX=${WINEPREFIX:-$HOME/.wine}
+cp $DOWNLOADS/dotnetfx.exe $HOME/.cache/winetricks/dotnet20
+cp $DOWNLOADS/netframework3.exe $HOME/.cache/winetricks/dotnet30
+cp $DOWNLOADS/gacutil-net40.tar.bz2 $HOME/.cache/winetricks/dotnet40
+sudo apt-get install wine
+wget http://www.kegel.com/wine/winetricks
+chmod +x winetricks  
+export WINEARCH=win32; ./winetricks -q winxp dotnet35sp1 dotnet40 vcrun2008
+find $DOWNLOADS -name "pwiz-setup-3.*-x86.msi" -print | head -n 1 | xargs wine msiexec /i
+wine regsvr32 $WINEPREFIX/drive_c/Program\ Files/ProteoWizard/ProteoWizard*/MSFileReader.XRawfile2.dll
+
+
+Cleaning Up
+
+You may wish to cleanup your wine environment before creating the
+setup script, these are files to consider removing:
+
+rm -rf $HOME/.wine/drive_c/windows/Microsoft.NET/Framework/v4.0.30319/SetupCache/
+rm -rf $HOME/.wine/drive_c/users/$user/Temp/*
